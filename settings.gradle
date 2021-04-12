@@ -1,0 +1,4 @@
+include ':VendingSdk'
+include ':app'
+include ':libuvccamera', ':usbCameraCommon'
+rootProject.name = "Vending4UE4Test"
