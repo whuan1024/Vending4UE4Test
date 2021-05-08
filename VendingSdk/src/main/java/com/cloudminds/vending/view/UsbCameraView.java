@@ -17,23 +17,22 @@ import java.util.List;
 
 public class UsbCameraView {
 
-    private static final int CAMERA_PREVIEW_WIDTH = 1280;
-    private static final int CAMERA_PREVIEW_HEIGHT = 720;
     private static final float BANDWIDTH_FACTORS = 0.5f;
 
     private UVCCameraHandler mHandler;
     private UsbDevice mUsbDevice;
     private UsbControlBlock mUsbControlBlock;
     private SurfaceTexture mSurfaceTexture;
+    private CameraViewInterface mViewInterface;
 
     public interface OnImageSavedListener {
         void onImageSaved(List<String> imageList);
     }
 
-    public UsbCameraView(Activity activityParent, CameraViewInterface viewInterface) {
-        viewInterface.setAspectRatio(UVCCamera.DEFAULT_PREVIEW_WIDTH / (float) UVCCamera.DEFAULT_PREVIEW_HEIGHT);
-        mHandler = UVCCameraHandler.createHandler(activityParent, viewInterface,
-                CAMERA_PREVIEW_WIDTH, CAMERA_PREVIEW_HEIGHT, BANDWIDTH_FACTORS);
+    public UsbCameraView(Activity activityParent, CameraViewInterface viewInterface, int width, int height) {
+        mViewInterface = viewInterface;
+        mViewInterface.setAspectRatio(UVCCamera.DEFAULT_PREVIEW_WIDTH / (float) UVCCamera.DEFAULT_PREVIEW_HEIGHT);
+        mHandler = UVCCameraHandler.createHandler(activityParent, mViewInterface, 2, width, height, UVCCamera.FRAME_FORMAT_MJPEG, BANDWIDTH_FACTORS);
     }
 
     public boolean onConnect(UsbDevice device, UsbControlBlock ctrlBlock, boolean createNew) {
@@ -47,14 +46,18 @@ public class UsbCameraView {
         }
     }
 
-    public void startPreview() {
+    public void startPreview(boolean show) {
         if (mHandler != null && mUsbControlBlock != null) {
             LogUtil.d("[UsbCameraView] start preview: deviceId = " + mUsbDevice.getDeviceId());
             mHandler.open(mUsbControlBlock);
 
-            int oesTextureId = GlUtil.generateTexture(36198);
-            mSurfaceTexture = new SurfaceTexture(oesTextureId);
-            mHandler.startPreview(new Surface(mSurfaceTexture));
+            if (show) {
+                mHandler.startPreview(new Surface(mViewInterface.getSurfaceTexture()));
+            } else {
+                int oesTextureId = GlUtil.generateTexture(36198);
+                mSurfaceTexture = new SurfaceTexture(oesTextureId);
+                mHandler.startPreview(new Surface(mSurfaceTexture));
+            }
         } else {
             LogUtil.e("[UsbCameraView] start preview: mHandler = " + mHandler + ", mUsbControlBlock = " + mUsbControlBlock);
         }

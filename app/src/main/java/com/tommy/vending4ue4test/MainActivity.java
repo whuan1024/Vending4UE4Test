@@ -17,7 +17,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        DoorController.getInstance().init(this);
+        DoorController.getInstance().init(this, R.id.camera1);
 
         Button Button1 = findViewById(R.id.button1);
         Button1.setOnClickListener(new View.OnClickListener() {
@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 LogUtil.w("[MainActivity] 开始录像");
-                DoorController.getInstance().startPreview();
+                DoorController.getInstance().startPreview(false);
                 DoorController.getInstance().startRecording("1235");
             }
         });
@@ -66,7 +66,17 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.button5).setOnClickListener(v -> {
             LogUtil.w("[MainActivity] 结束录像");
             DoorController.getInstance().stopRecording();
-            DoorController.getInstance().stopPreview();
+            DoorController.getInstance().stopPreview(false);
+        });
+
+        findViewById(R.id.button6).setOnClickListener(v -> {
+            LogUtil.w("[MainActivity] 开始刷脸");
+            DoorController.getInstance().startPreview(true);
+        });
+
+        findViewById(R.id.button7).setOnClickListener(v -> {
+            LogUtil.w("[MainActivity] 结束刷脸");
+            DoorController.getInstance().stopPreview(true);
         });
     }
 

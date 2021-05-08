@@ -487,10 +487,12 @@ public abstract class AbstractUVCCameraHandler extends Handler {
 			if (DEBUG) Log.v(TAG_THREAD, "handleStartPreview--mUVCCamera:"+mUVCCamera);
 			if ((mUVCCamera == null) || mIsPreviewing) return;
 			try {
+				Log.v(TAG_THREAD, "handleStartPreview--try--mWidth:"+mWidth+"////mHeight:"+mHeight);
 				mUVCCamera.setPreviewSize(mWidth, mHeight, 1, 31, mPreviewMode, mBandwidthFactor);
 			} catch (final IllegalArgumentException e) {
 				try {
 					// fallback to YUV mode
+					Log.v(TAG_THREAD, "handleStartPreview--catch");
 					mUVCCamera.setPreviewSize(mWidth, mHeight, 1, 31, UVCCamera.DEFAULT_PREVIEW_MODE, mBandwidthFactor);
 				} catch (final IllegalArgumentException e1) {
 					callOnError(e1);
@@ -643,6 +645,7 @@ public abstract class AbstractUVCCameraHandler extends Handler {
 				int len = frame.capacity();
 				final byte[] yuv = new byte[len];
 				frame.get(yuv);
+				Log.w(TAG_THREAD, "videoEncoder=" + videoEncoder + ", len=" + len + ", yuv=" + yuv);
 				if (needCapture(mDeviceId)) {
 					mDeviceCaptureMap.put(mDeviceId, false);
 					new Thread(new Runnable() {
