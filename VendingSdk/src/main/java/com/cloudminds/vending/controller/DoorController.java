@@ -45,11 +45,9 @@ import retrofit2.Response;
 
 public class DoorController {
 
+    private static final String MIDEA_PATH = Environment.getExternalStorageDirectory().getPath() + "/mideaSDK";
+    private static final String MIDEA_PATH_GEN2 = Environment.getExternalStorageDirectory().getPath() + "/midea/capture";
     private static final long MONITOR_THRESHOLD = 300 * 1024 * 1024;
-    private static final int VIDEO_CAMERA_PREVIEW_WIDTH = 1280;
-    private static final int VIDEO_CAMERA_PREVIEW_HEIGHT = 720;
-    private static final int FACE_CAMERA_PREVIEW_WIDTH = 640;
-    private static final int FACE_CAMERA_PREVIEW_HEIGHT = 480;
 
     private String mEventId;
     private Map<String, Integer> mSceneTypeMap = new ConcurrentHashMap<>();
@@ -58,14 +56,13 @@ public class DoorController {
     private static volatile DoorController mInstance;
 
     private USBMonitor mUSBMonitor;
-    private List<UsbDevice> mCommodityAndFaceCameraList = new ArrayList<>();
-    private HashMap<Integer, UsbCameraView> mCommodityCameraViewMap = new HashMap<>();
-    private HashMap<Integer, UsbCameraView> mFaceCameraViewMap = new HashMap<>();
+    private List<UsbDevice> mCommodityCameraList = new ArrayList<>();
+    private HashMap<Integer, UsbCameraView> mCameraViewMap = new HashMap<>();
 
     private OnDeviceConnectListener mOnDeviceConnectListener = new OnDeviceConnectListener() {
         @Override
         public void onAttach(UsbDevice device) {
-            if (mCommodityAndFaceCameraList.contains(device)) {
+            if (mCommodityCameraList.contains(device)) {
                 LogUtil.d("[OnDeviceConnectListener] onAttach: camera " + device.getDeviceId() + " request permission");
                 mUSBMonitor.requestPermission(device);
             }
@@ -78,20 +75,14 @@ public class DoorController {
 
         @Override
         public void onConnect(UsbDevice device, UsbControlBlock ctrlBlock, boolean createNew) {
-            UsbCameraView commodityCameraView = mCommodityCameraViewMap.get(device.getDeviceId());
-            UsbCameraView faceCameraView = mFaceCameraViewMap.get(device.getDeviceId());
-            if (commodityCameraView != null) {
-                if (commodityCameraView.onConnect(device, ctrlBlock, createNew)) {
-                    LogUtil.d("[OnDeviceConnectListener] onConnect: deviceId = " + device.getDeviceId() + ", createNew = " + createNew);
-                }
-            }
-            if (faceCameraView != null) {
-                if (faceCameraView.onConnect(device, ctrlBlock, createNew)) {
+            UsbCameraView usbCameraView = mCameraViewMap.get(device.getDeviceId());
+            if (usbCameraView != null) {
+                if (usbCameraView.onConnect(device, ctrlBlock, createNew)) {
                     LogUtil.d("[OnDeviceConnectListener] onConnect: deviceId = " + device.getDeviceId() + ", createNew = " + createNew);
                 }
             }
 
-            for (UsbDevice dev : mCommodityAndFaceCameraList) {
+            for (UsbDevice dev : mCommodityCameraList) {
                 if (!mUSBMonitor.hasPermission(dev)) {
                     LogUtil.d("[OnDeviceConnectListener] onConnect: camera " + dev.getDeviceId() + " request permission");
                     mUSBMonitor.requestPermission(dev);
@@ -110,9 +101,9 @@ public class DoorController {
         }
     };
 
-    public void init(Activity activity, int viewId) {
+    public void init(Activity activity) {
         mUSBMonitor = new USBMonitor(activity, mOnDeviceConnectListener);
-        mCommodityAndFaceCameraList = getCommodityAndFaceCameraDevices(activity, viewId);
+        mCommodityCameraList = getCommodityCameraDevices(activity);
     }
 
     public void registerUsbCamera(){
@@ -124,10 +115,7 @@ public class DoorController {
     }
 
     public void destroyView() {
-        for (UsbCameraView view : mCommodityCameraViewMap.values()) {
-            view.release();
-        }
-        for (UsbCameraView view : mFaceCameraViewMap.values()) {
+        for (UsbCameraView view : mCameraViewMap.values()) {
             view.release();
         }
         if (mUSBMonitor != null) {
@@ -136,56 +124,39 @@ public class DoorController {
         }
     }
 
-    private List<UsbDevice> getCommodityAndFaceCameraDevices(Activity activity, int viewId) {
+    private List<UsbDevice> getCommodityCameraDevices(Activity activity) {
         List<DeviceFilter> filter = DeviceFilter.getDeviceFilters(activity, R.xml.device_filter);
         List<UsbDevice> allDevices = mUSBMonitor.getDeviceList();
         List<UsbDevice> result = new ArrayList<>();
         for (UsbDevice device : allDevices) {
             LogUtil.d("[MainActivity] usb device info: deviceId = " + device.getDeviceId() +
-                    ", productName = " + device.getProductName() + ", manufacturerName = " + device.getManufacturerName() + ", deviceName = " + device.getDeviceName());
+                    ", productName = " + device.getProductName());
             if ("USB Camera".equals(device.getManufacturerName())) {
                 result.add(device);
                 UVCCameraTextureView uvcCameraTextureView = new UVCCameraTextureView(activity);
-                UsbCameraView usbCameraView = new UsbCameraView(activity, uvcCameraTextureView, VIDEO_CAMERA_PREVIEW_WIDTH, VIDEO_CAMERA_PREVIEW_HEIGHT);
-                mCommodityCameraViewMap.put(device.getDeviceId(), usbCameraView);
-            } else if ("T1RGB".equals(device.getManufacturerName())) {
-                result.add(device);
-                UVCCameraTextureView uvcCameraTextureView = activity.findViewById(viewId);
-                UsbCameraView usbCameraView = new UsbCameraView(activity, uvcCameraTextureView, FACE_CAMERA_PREVIEW_WIDTH, FACE_CAMERA_PREVIEW_HEIGHT);
-                mFaceCameraViewMap.put(device.getDeviceId(), usbCameraView);
+                UsbCameraView usbCameraView = new UsbCameraView(activity, uvcCameraTextureView);
+                mCameraViewMap.put(device.getDeviceId(), usbCameraView);
             }
         }
-        LogUtil.w("mCommodityCameraViewMap:"+ mCommodityCameraViewMap+"////mFaceCameraViewMap:"+mFaceCameraViewMap);
+        LogUtil.w("mCameraViewMap:"+mCameraViewMap);
         return result;
     }
 
-    public void startPreview(boolean isFace) {
-        if (isFace) {
-            for (UsbCameraView view : mFaceCameraViewMap.values()) {
-                view.startPreview(isFace);
-            }
-        } else {
-            for (UsbCameraView view : mCommodityCameraViewMap.values()) {
-                view.startPreview(isFace);
-            }
+    public void startPreview() {
+        for (UsbCameraView view : mCameraViewMap.values()) {
+            view.startPreview();
         }
     }
 
-    public void stopPreview(boolean isFace) {
-        if (isFace) {
-            for (UsbCameraView view : mFaceCameraViewMap.values()) {
-                view.stopPreview();
-            }
-        } else {
-            for (UsbCameraView view : mCommodityCameraViewMap.values()) {
-                view.stopPreview();
-            }
+    public void stopPreview() {
+        for (UsbCameraView view : mCameraViewMap.values()) {
+            view.stopPreview();
         }
     }
 
     public void startRecording(String eventId) {
-        for (Integer deviceId : mCommodityCameraViewMap.keySet()) {
-            UsbCameraView view = mCommodityCameraViewMap.get(deviceId);
+        for (Integer deviceId : mCameraViewMap.keySet()) {
+            UsbCameraView view = mCameraViewMap.get(deviceId);
             if (view != null) {
                 view.startRecording(eventId, deviceId);
             }
@@ -193,7 +164,7 @@ public class DoorController {
     }
 
     public void stopRecording() {
-        for (UsbCameraView view : mCommodityCameraViewMap.values()) {
+        for (UsbCameraView view : mCameraViewMap.values()) {
             view.stopRecording();
         }
     }
@@ -234,7 +205,7 @@ public class DoorController {
             LogUtil.i("[DoorController] License is valid");
             MideaCabinetSDK.INSTANCE.openLock("1", true, eventId);
             LogUtil.i("[DoorController] 门锁已开 eventId=" + eventId + ", openWeightList=" + openWeightList);
-            startPreview(false);
+            startPreview();
             startRecording(eventId);
         } else {
             MideaNetworkControl.INSTANCE.getLicense(Constants.APP_ID, Constants.SECRET,
@@ -245,7 +216,7 @@ public class DoorController {
                                 LogUtil.i("[DoorController] Succeed to get license: " + result);
                                 MideaCabinetSDK.INSTANCE.openLock("1", true, eventId);
                                 LogUtil.i("[DoorController] 门锁已开 eventId=" + eventId + ", openWeightList=" + openWeightList);
-                                startPreview(false);
+                                startPreview();
                                 startRecording(eventId);
                             } else {
                                 LogUtil.e("[DoorController] Failed to get license: " + result);
@@ -266,7 +237,7 @@ public class DoorController {
 
     public void closeDoor(OnUploadDoneListener listener) {
         stopRecording();
-        stopPreview(false);
+        stopPreview();
         new Thread(() -> {
             try {
                 Thread.sleep(3000); //关门后三秒再去获取重力，避免因为抖动造成的重力称数据异常
@@ -299,7 +270,7 @@ public class DoorController {
 
     public void openTimeout() {
         stopRecording();
-        stopPreview(false);
+        stopPreview();
 //        try {
 //            FileUtils.deleteDirectory(new File(MIDEA_PATH_GEN2 + "/" + mEventId));
 //        } catch (IOException e) {

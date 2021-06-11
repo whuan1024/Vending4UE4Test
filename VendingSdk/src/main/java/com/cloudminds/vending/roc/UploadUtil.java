@@ -100,7 +100,6 @@ public class UploadUtil {
     private static String getHost() {
 
         String host = RodHeader.getInstance().getUploadAddress();
-        host = "http://roc-fit86.harix.iamidata.com/";
 
         if (host == null || host.isEmpty()) {
             LogUtil.e("[UploadUtil] can't get rod host!");
