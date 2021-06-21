@@ -11,7 +11,7 @@ import com.serenegiant.usb.UVCCamera;
 import com.serenegiant.usbcameracommon.UVCCameraHandler;
 import com.serenegiant.widget.CameraViewInterface;
 
-import org.webrtc.GlUtil;
+import org.webrtc.GlUtils;
 
 import java.util.List;
 
@@ -52,7 +52,7 @@ public class UsbCameraView {
             LogUtil.d("[UsbCameraView] start preview: deviceId = " + mUsbDevice.getDeviceId());
             mHandler.open(mUsbControlBlock);
 
-            int oesTextureId = GlUtil.generateTexture(36198);
+            int oesTextureId = GlUtils.generateTexture(36198);
             mSurfaceTexture = new SurfaceTexture(oesTextureId);
             mHandler.startPreview(new Surface(mSurfaceTexture));
         } else {
