@@ -9,21 +9,68 @@ import com.cloudminds.vending.utils.LogUtil;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "wanghuan";
+
+    private DoorController.SDKListener mSdkListener = new DoorController.SDKListener() {
+        @Override
+        public void onOpenSuccess() {
+            LogUtil.w("[MainActivity] onOpenSuccess");
+        }
+
+        @Override
+        public void onOpenTimeOut(String eventId) {
+            LogUtil.w("[MainActivity] onOpenTimeOut: eventId = " + eventId);
+        }
+
+        @Override
+        public void onCloseSuccess(String eventId) {
+            LogUtil.w("[MainActivity] onCloseSuccess: eventId = " + eventId);
+            DoorController.getInstance().closeDoor(new DoorController.OnUploadDoneListener() {
+                @Override
+                public void onUploadDone(String eventId, Map<String, String> params) {
+                    LogUtil.w("[MainActivity] onUploadDone: eventId = " + eventId + ", params = " + params);
+                }
+            });
+        }
+
+        @Override
+        public void onCloseTimeOut() {
+            LogUtil.w("[MainActivity] onCloseTimeOut");
+        }
+
+        @Override
+        public void onOpenInnerLock() {
+            LogUtil.w("[MainActivity] onOpenInnerLock");
+        }
+
+        @Override
+        public void onTransSuccess() {
+            LogUtil.w("[MainActivity] onTransSuccess");
+        }
+
+        @Override
+        public void onError() {
+            LogUtil.w("[MainActivity] onError");
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         DoorController.getInstance().init(this);
+        DoorController.getInstance().initSdk(this, mSdkListener);
 
         Button Button1 = findViewById(R.id.button1);
         Button1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                DoorController.getInstance().openDoor("1234", 0);
+                String eventId = String.valueOf(System.currentTimeMillis());
+                DoorController.getInstance().openDoor(eventId, 0);
             }
         });
 
@@ -33,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 DoorController.getInstance().closeDoor(new DoorController.OnUploadDoneListener() {
                     @Override
-                    public void onUploadDone() {
+                    public void onUploadDone(String eventId, Map<String, String> params) {
 
                     }
                 });
@@ -46,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 DoorController.getInstance().sendVideo("path", new DoorController.OnUploadDoneListener() {
                     @Override
-                    public void onUploadDone() {
+                    public void onUploadDone(String eventId, Map<String, String> params) {
 
                     }
                 });

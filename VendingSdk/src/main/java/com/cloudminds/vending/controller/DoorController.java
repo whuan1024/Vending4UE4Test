@@ -19,6 +19,8 @@ import com.cloudminds.vending.vo.EventStatus;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.midea.cabinet.sdk4data.MideaCabinetSDK;
+import com.midea.cabinet.sdk4data.bean.CabinetGridDataBean;
+import com.midea.cabinet.sdk4data.bean.ErrorMsgBean;
 import com.midea.sdk.algorithm.MideaNetworkControl;
 import com.serenegiant.usb.DeviceFilter;
 import com.serenegiant.usb.USBMonitor;
@@ -106,6 +108,88 @@ public class DoorController {
         mCommodityCameraList = getCommodityCameraDevices(activity);
     }
 
+    public void initSdk(Activity activity, SDKListener listener) {
+        MideaCabinetSDK.INSTANCE.init(activity, Constants.APP_ID, Constants.SECRET, Constants.TYPE, Constants.UART_PATH, 0, "1",
+                FileUtil.getCabinetFloorCount(), new MideaCabinetSDK.SDKInitCallBack() {
+                    @Override
+                    public void initFailed(@NotNull String msg) {
+                        LogUtil.e("[MideaCabinetSDK] initFailed: " + msg);
+                    }
+
+                    @Override
+                    public void initSuccess() {
+                        LogUtil.i("[MideaCabinetSDK] initSuccess: Midea SDK Version = " + MideaCabinetSDK.INSTANCE.getSDKVersion());
+                        MideaCabinetSDK.INSTANCE.setAutoCapture(false);
+                        MideaCabinetSDK.INSTANCE.getBaseCabinetControl().setDoorCount(1);
+                        //MideaCabinetSDK.INSTANCE.getBaseCabinetControl().setDeviceCount(4);
+                        MideaCabinetSDK.INSTANCE.setCabinetSDKListener(new MideaCabinetSDK.SDKListener() {
+                            @Override
+                            public void onOpenSuccess() {
+                                //开门成功
+                                LogUtil.i("[MideaCabinetSDK] onOpenSuccess");
+                                listener.onOpenSuccess();
+                                //mController.openDoor();
+                                //mClient.reportStatus("door_state", 1);
+                            }
+
+                            @Override
+                            public void onOpenTimeOut() {
+                                //开门超时
+                                LogUtil.i("[MideaCabinetSDK] onOpenTimeOut");
+                                listener.onOpenTimeOut(mEventId);
+                                openTimeout();
+                            }
+
+                            @Override
+                            public void onCloseSuccess() {
+                                //关门成功
+                                LogUtil.i("[MideaCabinetSDK] onCloseSuccess");
+                                listener.onCloseSuccess(mEventId);
+                                //mClient.reportStatus("door_state", 0);
+                            }
+
+                            @Override
+                            public void onCloseTimeOut() {
+                                //关门超时
+                                LogUtil.i("[MideaCabinetSDK] onCloseTimeOut");
+                                listener.onCloseTimeOut();
+                            }
+
+                            @Override
+                            public void onOpenInnerLock(@NotNull CabinetGridDataBean cabinetGridDataBean) {
+                                //开小门成功
+                                LogUtil.i("[MideaCabinetSDK] onOpenInnerLock");
+                                listener.onOpenInnerLock();
+                            }
+
+                            @Override
+                            public void onTransSuccess(@NotNull String dir) {
+                                //视频转码成功
+                                LogUtil.i("[MideaCabinetSDK] onTransSuccess: dir = " + dir);
+                                //mController.sendVideo(dir);
+                                listener.onTransSuccess();
+                            }
+
+                            @Override
+                            public void onError(@NotNull ErrorMsgBean errorMsgBean) {
+                                //异常监听
+                                LogUtil.e("[MideaCabinetSDK] onError: errorMsgBean = " + errorMsgBean);
+                                if ("2643".equals(errorMsgBean.getCode()) || "2644".equals(errorMsgBean.getCode())) {
+                                    reportVendingEvent(mEventId, EventStatus.ACTION_RCU_DONE,
+                                            EventStatus.CODE_CAMERA_ERROR, errorMsgBean.getMsg(), errorMsgBean.getExtra(), "", "");
+                                }
+                                if ("2646".equals(errorMsgBean.getCode())) {
+                                    reportVendingEvent(mEventId, EventStatus.ACTION_RCU_DONE,
+                                            EventStatus.CODE_VIDEO_TRANSCODING_ERROR, errorMsgBean.getMsg(), errorMsgBean.getExtra(), "", "");
+                                }
+                                listener.onError();
+                                //mClient.reportError(errorMsgBean.getCode(), errorMsgBean.getMsg(), errorMsgBean.getExtra());
+                            }
+                        });
+                    }
+                });
+    }
+
     public void registerUsbCamera(){
         mUSBMonitor.register();
     }
@@ -184,7 +268,17 @@ public class DoorController {
     }
 
     public interface OnUploadDoneListener {
-        void onUploadDone();
+        void onUploadDone(String eventId, Map<String, String> params);
+    }
+
+    public interface SDKListener {
+        void onOpenSuccess();
+        void onOpenTimeOut(String eventId);
+        void onCloseSuccess(String eventId);
+        void onCloseTimeOut();
+        void onOpenInnerLock();
+        void onTransSuccess();
+        void onError();
     }
 
     public String getEventId() {
@@ -332,7 +426,7 @@ public class DoorController {
                             reportVendingEvent(eventId, EventStatus.ACTION_RCU_DONE,
                                     EventStatus.CODE_UPLOAD_FILE_ERROR, "", "", fileUrl, weightDetails);
                         } else {
-                            listener.onUploadDone();
+                            listener.onUploadDone(eventId, params);
                             reportVendingEvent(eventId, EventStatus.ACTION_RCU_DONE,
                                     EventStatus.CODE_RCU_DONE, "", "", fileUrl, weightDetails);
                         }

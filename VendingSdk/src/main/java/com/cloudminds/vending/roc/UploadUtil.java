@@ -81,13 +81,13 @@ public class UploadUtil {
 
     public static String uploadFileAndRetry(String path, final Map<String, String> mHeadMap) {
         String fileUrl = "";
-        for (int i = 0; i < RETRY_TIME_MAX; i++) {
-            fileUrl = uploadFileX(path, mHeadMap);
-            LogUtil.d("[UploadUtil] uploadFileAndRetry i=" + i + ", fileUrl=" + fileUrl + ", path=" + path);
-            if (!TextUtils.isEmpty(fileUrl)) {
-                break;
-            }
-        }
+//        for (int i = 0; i < RETRY_TIME_MAX; i++) {
+//            fileUrl = uploadFileX(path, mHeadMap);
+//            LogUtil.d("[UploadUtil] uploadFileAndRetry i=" + i + ", fileUrl=" + fileUrl + ", path=" + path);
+//            if (!TextUtils.isEmpty(fileUrl)) {
+//                break;
+//            }
+//        }
 
         File file = new File(path);
         if (file.exists()) {
@@ -100,6 +100,7 @@ public class UploadUtil {
     private static String getHost() {
 
         String host = RodHeader.getInstance().getUploadAddress();
+        //host = "http://roc-fit86.harix.iamidata.com/";
 
         if (host == null || host.isEmpty()) {
             LogUtil.e("[UploadUtil] can't get rod host!");
