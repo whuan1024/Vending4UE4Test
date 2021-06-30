@@ -16,6 +16,8 @@ import com.cloudminds.vending.utils.ZipUtil;
 import com.cloudminds.vending.view.UsbCameraView;
 import com.cloudminds.vending.vo.BaseResult;
 import com.cloudminds.vending.vo.EventStatus;
+import com.cloudminds.vending.vo.PictureVisionRequest;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.midea.cabinet.sdk4data.MideaCabinetSDK;
@@ -30,6 +32,8 @@ import com.serenegiant.widget.UVCCameraTextureView;
 
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -268,7 +272,7 @@ public class DoorController {
     }
 
     public interface OnUploadDoneListener {
-        void onUploadDone(String eventId, Map<String, String> params);
+        void onUploadDone(String eventId, String paramsJson);
     }
 
     public interface SDKListener {
@@ -426,7 +430,7 @@ public class DoorController {
                             reportVendingEvent(eventId, EventStatus.ACTION_RCU_DONE,
                                     EventStatus.CODE_UPLOAD_FILE_ERROR, "", "", fileUrl, weightDetails);
                         } else {
-                            listener.onUploadDone(eventId, params);
+                            listener.onUploadDone(eventId, constructVisionRequest(eventId, params));
                             reportVendingEvent(eventId, EventStatus.ACTION_RCU_DONE,
                                     EventStatus.CODE_RCU_DONE, "", "", fileUrl, weightDetails);
                         }
@@ -442,6 +446,26 @@ public class DoorController {
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    private String constructVisionRequest(String eventId, Map<String, String> params) {
+        String result = "";
+        try {
+            PictureVisionRequest pictureVisionRequest = new PictureVisionRequest();
+            pictureVisionRequest.setExtraBody(eventId);
+            pictureVisionRequest.setExtraType("isVending");
+            pictureVisionRequest.setRecognizeType(PictureVisionRequest.RecognizeType.VENDING_DYNAMIC);
+            pictureVisionRequest.setParams(params);
+            String pictureVisionRequestStr = new Gson().toJson(pictureVisionRequest);
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("videoData", "");
+            jsonObject.put("videoVisionRequestData", pictureVisionRequestStr);
+            result = jsonObject.toString();
+            LogUtil.i("[DoorController] VisionRequest: " + result);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     private String constructWeightJson(List<String> list1, List<String> list2) {

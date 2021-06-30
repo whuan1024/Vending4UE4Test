@@ -16,7 +16,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitUtil {
 
-    private static final String BASE_URL = FileUtil.getDomain() + "/crss-mobile/cves/v1/vending/";
+    private static final String BASE_URL = "https://cross-fit86.cloudvending.cn/crss-mobile/cves/v1/vending/";
     private static final int TIMEOUT = 10;
 
     private static volatile RetrofitUtil mInstance;
@@ -57,7 +57,7 @@ public class RetrofitUtil {
 
     private RetrofitUtil() {
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(message -> {
-//            LogUtil.d("[RetrofitUtil] httpLog: " + message);  //too many logs, open it for test only
+            LogUtil.d("[RetrofitUtil] httpLog: " + message);  //too many logs, open it for test only
         });
         httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 

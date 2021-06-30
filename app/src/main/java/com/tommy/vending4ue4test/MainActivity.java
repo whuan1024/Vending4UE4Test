@@ -31,8 +31,8 @@ public class MainActivity extends AppCompatActivity {
             LogUtil.w("[MainActivity] onCloseSuccess: eventId = " + eventId);
             DoorController.getInstance().closeDoor(new DoorController.OnUploadDoneListener() {
                 @Override
-                public void onUploadDone(String eventId, Map<String, String> params) {
-                    LogUtil.w("[MainActivity] onUploadDone: eventId = " + eventId + ", params = " + params);
+                public void onUploadDone(String eventId, String paramsJson) {
+                    LogUtil.w("[MainActivity] onUploadDone: eventId = " + eventId + ", paramsJson = " + paramsJson);
                 }
             });
         }
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 DoorController.getInstance().closeDoor(new DoorController.OnUploadDoneListener() {
                     @Override
-                    public void onUploadDone(String eventId, Map<String, String> params) {
+                    public void onUploadDone(String eventId, String paramsJson) {
 
                     }
                 });
@@ -91,9 +91,9 @@ public class MainActivity extends AppCompatActivity {
         Button3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                DoorController.getInstance().sendVideo("path", new DoorController.OnUploadDoneListener() {
+                DoorController.getInstance().sendVideo("/sdcard/CloudVending/videoFile/666", new DoorController.OnUploadDoneListener() {
                     @Override
-                    public void onUploadDone(String eventId, Map<String, String> params) {
+                    public void onUploadDone(String eventId, String paramsJson) {
 
                     }
                 });
