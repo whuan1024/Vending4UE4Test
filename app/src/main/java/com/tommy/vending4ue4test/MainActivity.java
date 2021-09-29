@@ -4,12 +4,10 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
-import com.cloudminds.vending.controller.DoorController;
-import com.cloudminds.vending.utils.LogUtil;
-
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.Map;
+import com.cloudminds.vending.controller.DoorController;
+import com.cloudminds.vending.utils.LogUtil;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,8 +46,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onTransSuccess() {
-            LogUtil.w("[MainActivity] onTransSuccess");
+        public void onTransSuccess(String dir) {
+            LogUtil.w("[MainActivity] onTransSuccess: dir = " + dir);
+            DoorController.getInstance().sendVideo(dir, new DoorController.OnUploadDoneListener() {
+                @Override
+                public void onUploadDone(String eventId, String paramsJson) {
+                    LogUtil.w("[MainActivity] onUploadDone: eventId = " + eventId + ", paramsJson = " + paramsJson);
+                }
+            });
         }
 
         @Override
@@ -62,7 +66,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        DoorController.getInstance().init(this);
         DoorController.getInstance().initSdk(this, mSdkListener);
 
         Button Button1 = findViewById(R.id.button1);
@@ -99,39 +102,20 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
-
-        Button Button4 = findViewById(R.id.button4);
-        Button4.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                LogUtil.w("[MainActivity] 开始录像");
-                DoorController.getInstance().startPreview();
-                DoorController.getInstance().startRecording("1235");
-            }
-        });
-
-        findViewById(R.id.button5).setOnClickListener(v -> {
-            LogUtil.w("[MainActivity] 结束录像");
-            DoorController.getInstance().stopRecording();
-            DoorController.getInstance().stopPreview();
-        });
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        DoorController.getInstance().registerUsbCamera();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        DoorController.getInstance().unregisterUsbCamera();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        DoorController.getInstance().destroyView();
     }
 }
