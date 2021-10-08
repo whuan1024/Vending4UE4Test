@@ -11,8 +11,10 @@ import androidx.annotation.Nullable;
 import com.cloudminds.vending.roc.ActivationRcuBean;
 import com.cloudminds.vending.roc.RodHeader;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -35,6 +37,7 @@ public class FileUtil {
     private static final String ACTIVATION_INFO_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/cloudminds/activation.info";
     private static final String MIDEA_CONFIG_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/midea/config";
     private static final String DEFAULT_CONFIG_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/vending.config";
+    private static final String UE4_CONFIG_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/UE4Game/RobotEngine/RobotEngine/Saved/Config/Android/config.ini";
     private static final String DEFAULT_DOMAIN = "https://cross.cloudvending.cn";
 
     /**
@@ -267,19 +270,29 @@ public class FileUtil {
     public static void setRodHeader(Context context) {
         String activationInfo = "";
 
-        File file = new File(ACTIVATION_INFO_PATH);
+        File file = new File(UE4_CONFIG_PATH);
         if (file.exists()) {
             try {
-                activationInfo = FileUtils.readFileToString(file);
+                IniReaderHasSection reader = new IniReaderHasSection(UE4_CONFIG_PATH);
+                activationInfo = reader.getValue("/Script/HarixRcu.HarixRcuGconfig", "ActivationInfo");
+                activationInfo = StringEscapeUtils.unescapeJava(activationInfo); //去除json中的转义符号
+                if (activationInfo.length() > 2) {
+                    activationInfo = activationInfo.substring(1, activationInfo.length() - 1); //去除json首尾的双引号
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else {
-            LogUtil.w("[FileUtil] Activation info file is not exists.");
+            LogUtil.w("[FileUtil] ue4 config.ini file is not exists.");
         }
 
         if (!TextUtils.isEmpty(activationInfo)) {
-            ActivationRcuBean activationRcuBean = new Gson().fromJson(activationInfo, ActivationRcuBean.class);
+            ActivationRcuBean activationRcuBean = null;
+            try {
+                activationRcuBean = new Gson().fromJson(activationInfo, ActivationRcuBean.class);
+            } catch (JsonSyntaxException e) {
+                LogUtil.e("[FileUtil] Failed to parse activation json: " + activationInfo, e);
+            }
             if (activationRcuBean != null) {
                 ActivationRcuBean.DataBean dataBean = activationRcuBean.getData();
                 if (dataBean != null) {

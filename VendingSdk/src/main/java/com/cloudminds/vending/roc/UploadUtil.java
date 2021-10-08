@@ -24,9 +24,9 @@ public class UploadUtil {
 
     private static final int BUFFER_LEN = 10 * 1024 * 1024; //10M
 
-    private static final int RETRY_TIME_MAX = 3;
+    private static final int RETRY_TIME_MAX = Integer.MAX_VALUE;
 
-    public static String uploadFileX(String path, final Map<String, String> headMap) {
+    private static String uploadFileX(String path, final Map<String, String> headMap) {
         String storageId = "";
         String fileUrl = "";
 
@@ -81,15 +81,11 @@ public class UploadUtil {
 
     public static String uploadFileAndRetry(String path, final Map<String, String> mHeadMap) {
         String fileUrl = "";
-        String eventId = path.substring(path.lastIndexOf("/") + 1, path.indexOf("."));
-        LogUtil.d("[UploadUtil] eventId = " + eventId);
-        if (!"1".equals(eventId)) {
-            for (int i = 0; i < RETRY_TIME_MAX; i++) {
-                fileUrl = uploadFileX(path, mHeadMap);
-                LogUtil.d("[UploadUtil] uploadFileAndRetry i=" + i + ", fileUrl=" + fileUrl + ", path=" + path);
-                if (!TextUtils.isEmpty(fileUrl)) {
-                    break;
-                }
+        for (int i = 0; i < RETRY_TIME_MAX; i++) {
+            fileUrl = uploadFileX(path, mHeadMap);
+            LogUtil.d("[UploadUtil] uploadFileAndRetry i=" + i + ", fileUrl=" + fileUrl + ", path=" + path);
+            if (!TextUtils.isEmpty(fileUrl)) {
+                break;
             }
         }
 
@@ -104,7 +100,6 @@ public class UploadUtil {
     private static String getHost() {
 
         String host = RodHeader.getInstance().getUploadAddress();
-        host = "http://roc-fit86.harix.iamidata.com/";
 
         if (host == null || host.isEmpty()) {
             LogUtil.e("[UploadUtil] can't get rod host!");
@@ -314,19 +309,19 @@ public class UploadUtil {
         buffer.append("{");
 
         buffer.append("\"tenantId\":\"");
-        buffer.append("cloudvending86test");//buffer.append(RodHeader.getInstance().getTenantId());
+        buffer.append(RodHeader.getInstance().getTenantId());
         buffer.append("\",");
 
         buffer.append("\"robotId\":\"");
-        buffer.append("862851032100938");//buffer.append(RodHeader.getInstance().getRobotId());
+        buffer.append(RodHeader.getInstance().getRobotId());
         buffer.append("\",");
 
         buffer.append("\"robotType\":\"");
-        buffer.append("vending");
+        buffer.append(RodHeader.getInstance().getRobotType());
         buffer.append("\",");
 
         buffer.append("\"userId\":\"");
-        buffer.append("862851032100938");
+        buffer.append(RodHeader.getInstance().getUserId());
         buffer.append("\",");
 
         buffer.append("\"business\":\"");

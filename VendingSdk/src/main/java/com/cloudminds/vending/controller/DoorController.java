@@ -372,20 +372,24 @@ public class DoorController {
         eventStatus.setVideoUrl(videoUrl);
         eventStatus.setWeightDetails(weightDetails);
         eventStatus.setReportTime(System.currentTimeMillis());
-        LogUtil.i("[DoorController] report vending event: " + eventStatus);
+        reportVendingEvent(eventStatus);
+    }
 
+    private void reportVendingEvent(EventStatus eventStatus) {
+        LogUtil.i("[DoorController] report vending event: " + eventStatus);
         ApiService apiService = RetrofitUtil.getInstance().create(ApiService.class);
         apiService.reportVendingEvent(eventStatus).enqueue(new Callback<BaseResult>() {
             @Override
             public void onResponse(Call<BaseResult> call, Response<BaseResult> response) {
                 if (response.code() == 200) {
-                    LogUtil.i("[DoorController] onResponse: " + response.body());
+                    LogUtil.i("[DoorController] onResponse: response = " + response.body() + ", request = " + call.request());
                 }
             }
 
             @Override
             public void onFailure(Call<BaseResult> call, Throwable t) {
-                LogUtil.e("[DoorController] onFailure: ", t);
+                LogUtil.e("[DoorController] onFailure: request = " + call.request(), t);
+                reportVendingEvent(eventStatus);
             }
         });
     }
