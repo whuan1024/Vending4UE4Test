@@ -22,7 +22,6 @@ import com.midea.cabinet.sdk4data.bean.CabinetGridDataBean;
 import com.midea.cabinet.sdk4data.bean.ErrorMsgBean;
 import com.midea.sdk.algorithm.MideaNetworkControl;
 
-import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -236,11 +235,7 @@ public class DoorController {
     }
 
     public void openTimeout() {
-//        try {
-//            FileUtils.deleteDirectory(new File(MIDEA_PATH_GEN2 + "/" + mEventId));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        FileUtil.deleteDir(MIDEA_PATH_GEN2 + "/" + mEventId);
         reportVendingEvent(mEventId, EventStatus.ACTION_DOOR_CLOSED, EventStatus.CODE_OPEN_TIMEOUT, "", "", "", "");
     }
 
@@ -255,14 +250,14 @@ public class DoorController {
         }
     }
 
-    private void deleteOldZip(String path) throws IOException {
-        while (FileUtils.sizeOfDirectory(new File(path)) > MONITOR_THRESHOLD) {
-            List<File> files = new ArrayList<File>(
-                    FileUtils.listFiles(new File(path), new String[]{"zip"}, false));
+    private void deleteOldZip(String path) {
+        File dirFile = new File(path);
+        while (FileUtil.getDirectorySize(dirFile) > MONITOR_THRESHOLD) {
+            List<File> files = FileUtil.listFilesForFolder(dirFile, ".zip");
             if (files.size() > 1) {
                 Collections.sort(files, new FileNameComparator());
                 File oldestFile = files.get(0);
-                FileUtils.forceDelete(oldestFile);
+                FileUtil.deleteFile(oldestFile.getPath());
                 LogUtil.i("[DoorController] delete old zip file: " + oldestFile.getName());
             } else {
                 break;
@@ -282,7 +277,7 @@ public class DoorController {
                     Map<String, String> params = new HashMap<>();
                     String zipVideoPath = videoData + ".zip";
                     if (ZipUtil.zipFile(videoData, zipVideoPath)) {
-                        //FileUtils.deleteDirectory(new File(videoData));
+                        FileUtil.deleteDir(videoData);
                         String weightDetails = constructWeightJson(mOpenWeightMap.get(eventId), mCloseWeightMap.get(eventId));
                         String fileUrl = UploadUtil.uploadFileAndRetry(zipVideoPath, UploadUtil.getHeadMap("video"));
                         params.put("weightjson", weightDetails);
@@ -305,10 +300,10 @@ public class DoorController {
                         LogUtil.e("[DoorController] Failed to zip file: " + videoData);
                     }
                 } else if (sceneType == 1) {
-                    FileUtils.deleteDirectory(new File(videoData));
+                    FileUtil.deleteDir(videoData);
                     LogUtil.i("[DoorController] 这是一次上货事件 eventId=" + eventId);
                 }
-                //deleteOldZip(MIDEA_PATH_GEN2);
+                deleteOldZip(MIDEA_PATH_GEN2);
             } catch (IOException e) {
                 e.printStackTrace();
             }

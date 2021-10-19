@@ -13,7 +13,6 @@ import com.cloudminds.vending.roc.RodHeader;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,7 +26,9 @@ import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class FileUtil {
@@ -64,7 +65,17 @@ public class FileUtil {
     }
 
     /**
-     * 递归删除文件目录
+     * 递归删除文件目录（以路径作参数）
+     *
+     * @param dirPath
+     */
+    public static void deleteDir(String dirPath) {
+        File dir = new File(dirPath);
+        deleteDir(dir);
+    }
+
+    /**
+     * 递归删除文件目录（以文件作参数）
      *
      * @param dir
      */
@@ -76,6 +87,33 @@ public class FileUtil {
             }
         }
         dir.delete();
+    }
+
+    public static long getDirectorySize(File dir) {
+        long length = 0;
+        if (dir != null && dir.isDirectory()) {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        length += file.length();
+                    } else {
+                        length += getDirectorySize(file);
+                    }
+                }
+            }
+        }
+        return length;
+    }
+
+    public static List<File> listFilesForFolder(File dir, String extension) {
+        List<File> files = new ArrayList<>();
+        for (File file : dir.listFiles()) {
+            if (file.getName().endsWith(extension)) {
+                files.add(file);
+            }
+        }
+        return files;
     }
 
     /**
